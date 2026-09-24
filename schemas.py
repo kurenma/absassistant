@@ -1,0 +1,52 @@
+from pydantic import BaseModel, Field, ConfigDict, model_validator, field_validator
+from product import MV_TYPES
+from decimal import Decimal
+import datetime
+
+class MovementCreate(BaseModel):
+    sku: str = Field(min_length=1, max_length=64)
+    location: str = Field(min_length=1, max_length=32)
+    type: MV_TYPES
+    quantity: Decimal = Field(max_digits=14, decimal_places=3)
+    batch_number: str | None = Field(default=None, min_length=1, max_length=64)
+    document_number: str = Field(min_length=1, max_length=128)
+    occurred_at: datetime.date
+
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    @model_validator(mode="after")
+    def validate_quantity(self):
+
+        if self.type == MV_TYPES.CORRECTION and self.quantity == 0:
+            raise ValueError("The quantity for 'correction' must not be equal to zero.")
+        elif self.type != MV_TYPES.CORRECTION and self.quantity <= 0:
+            raise ValueError("The quantity for this operation must be greater than zero.")
+
+        return self
+    
+    @model_validator(mode="after")
+    def validate_batch_number(self):
+
+        types_requiring_batch = {
+            MV_TYPES.RECEIPT,
+            MV_TYPES.WRITEOFF,
+            MV_TYPES.RETURN,
+            MV_TYPES.CORRECTION,
+        }
+
+        if self.type in types_requiring_batch and self.batch_number is None:
+            raise ValueError("The batch_number cannot be None")
+
+        if self.type == MV_TYPES.CONSUME and self.batch_number is not None:
+            raise ValueError("The batch_number for operation 'consume' must be None")
+
+        return self
+
+    @field_validator("occurred_at")
+    @classmethod
+    def occurred_at_not_in_future(cls, value: datetime.date):
+
+        if value > datetime.date.today():
+            raise ValueError("occurred_at cannot be in the future")
+
+        return value
