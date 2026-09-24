@@ -195,6 +195,26 @@ def _prepare_allocations(
         return [(batch.id, quantity)]
 
 
+def lock_batches_for_update(
+        session: Session,
+        product_id: int,
+        location_id: int
+) -> list[Batch]:
+
+    statement = (
+        select(Batch)
+        .where(
+            Batch.product_id == product_id,
+            Batch.location_id == location_id,
+        )
+        .order_by(Batch.id.asc())
+        .with_for_update()
+    )
+
+    batches = session.scalars(statement).all()
+
+    return sorted(batches, key=lambda b: (b.expires_at, b.id))
+
 def register_movement(
         session: Session,
         sku: str,
@@ -211,6 +231,8 @@ def register_movement(
         product, location = resolve_product_and_location(session, sku, location_code)
 
         ensure_document_number_available(session, document_number, location_code)
+
+        lock_batches_for_update(session, product.id, location.id)
 
         allocations = _prepare_allocations(
             session,
