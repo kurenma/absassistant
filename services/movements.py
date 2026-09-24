@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from calculation.fefo import allocate_fefo
 from calculation.stock import calculate_batch_stock, calculate_stock
-from product import Batch, Location, Movement, MovementAllocation, Product
+from product import Batch, Location, Movement, MovementAllocation, Product, MV_TYPES
 
 
 class ProductNotFoundError(Exception):
@@ -162,3 +162,34 @@ def plan_consume_allocations(
     batches = get_batch_balances(session, product_id, location_id)
 
     return allocate_fefo(requestes_quantity, operation_date, batches)
+
+def _prepare_allocations(
+        session: Session,
+        product_id: int,
+        location_id: int,
+        mv_type: MV_TYPES,
+        quantity: Decimal,
+        operation_date: datetime.date,
+        batch_number: str | None = None
+) -> list[tuple[int, Decimal]]:
+
+    if mv_type == MV_TYPES.CONSUME:
+        batches = get_batch_balances(session, product_id, location_id)
+        return allocate_fefo(quantity, operation_date, batches)
+
+    if batch_number is None:
+        raise ValueError(f"batch_number is required for mv_type={mv_type!r}")
+
+    batch = resolve_batch(session, product_id, location_id, batch_number)
+
+    if mv_type == MV_TYPES.WRITEOFF:
+        ensure_batch_stock_available(session, batch.id, quantity)
+        return [(batch.id, abs(quantity))]
+
+    if mv_type in (MV_TYPES.RECEIPT, MV_TYPES.RETURN):
+        return [(batch.id, abs(quantity))]
+
+    if mv_type == MV_TYPES.CORRECTION:
+        if quantity < 0:
+            ensure_batch_stock_available(session, batch.id, abs(quantity))
+        return [(batch.id, quantity)]
