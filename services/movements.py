@@ -193,3 +193,73 @@ def _prepare_allocations(
         if quantity < 0:
             ensure_batch_stock_available(session, batch.id, abs(quantity))
         return [(batch.id, quantity)]
+
+
+def register_movement(
+        session: Session,
+        sku: str,
+        product_id: int,
+        location_code: str,
+        document_number: str,
+        mv_type: MV_TYPES,
+        quantity: Decimal,
+        operation_date: datetime.date,
+        batch_number: str | None = None
+) -> tuple[Movement, Decimal]:
+    
+    try:
+        product, location = resolve_product_and_location(session, sku, location_code)
+
+        ensure_document_number_available(session, document_number, location_code)
+
+        allocations = _prepare_allocations(
+            session,
+            product_id,
+            location.id,
+            mv_type,
+            quantity,
+            operation_date,
+            batch_number
+        )
+
+        movement = Movement(
+            product_id=product.id,
+            location_id=location.id,
+            document_number=document_number,
+            type=mv_type,
+            quantity=quantity,
+            occurred_at=operation_date
+        )
+
+        session.add(movement)
+        session.flush()
+
+        for batch_id, alloc_quantity in allocations:
+            session.add(
+                MovementAllocation(
+                    movement_id=movement.id,
+                    batch_id=batch_id,
+                    quantity=alloc_quantity
+                )
+            )
+
+        total_allocated = sum(
+            (q for _, q in allocations),
+            start=Decimal("0")
+        )
+
+        if total_allocated != quantity:
+            raise ValueError(
+                f"Allocation sum {total_allocated} does not match "
+                f"movement quantity {quantity}"
+            )
+
+        session.commit()
+
+        new_stock = get_current_stock(session, product.id, location.id)
+
+        return movement, new_stock
+    
+    except Exception:
+        session.rollback()
+        raise
