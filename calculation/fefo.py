@@ -1,8 +1,6 @@
-from decimal import Decimal
 import datetime
 from collections.abc import Iterable
-
-
+from decimal import Decimal
 
 
 class InsufficientStockError(Exception):
@@ -22,9 +20,7 @@ class InsufficientStockError(Exception):
 def allocate_fefo(
     requested_quantity: Decimal,
     operation_date: datetime.date,
-    batches: Iterable[
-        tuple[int, datetime.date, Decimal]
-    ],
+    batches: Iterable[tuple[int, datetime.date, Decimal]],
 ) -> list[tuple[int, Decimal]]:
 
     valid = [

@@ -1,6 +1,7 @@
-from product import MV_TYPES
-from decimal import Decimal
 from collections.abc import Iterable
+from decimal import Decimal
+
+from product import MV_TYPES
 
 
 def calculate_stock(movements: Iterable[tuple[MV_TYPES, Decimal]]) -> Decimal:
@@ -15,12 +16,14 @@ def calculate_stock(movements: Iterable[tuple[MV_TYPES, Decimal]]) -> Decimal:
 
     return stock
 
-def calculate_batch_stock(allocations: Iterable[tuple[MV_TYPES, Decimal, Decimal]]) -> Decimal:
+
+def calculate_batch_stock(
+    allocations: Iterable[tuple[MV_TYPES, Decimal, Decimal]],
+) -> Decimal:
 
     normalized_movements: list[tuple[MV_TYPES, Decimal]] = []
 
     for mv_type, mv_quantity, allocated_quantity in allocations:
-
         signed_quantity = allocated_quantity
 
         if mv_type == MV_TYPES.CORRECTION and mv_quantity < 0:

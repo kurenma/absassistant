@@ -1,7 +1,10 @@
-from pydantic import BaseModel, Field, ConfigDict, model_validator, field_validator
-from product import MV_TYPES
-from decimal import Decimal
 import datetime
+from decimal import Decimal
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from product import MV_TYPES
+
 
 class MovementCreate(BaseModel):
     sku: str = Field(min_length=1, max_length=64)
@@ -20,10 +23,12 @@ class MovementCreate(BaseModel):
         if self.type == MV_TYPES.CORRECTION and self.quantity == 0:
             raise ValueError("The quantity for 'correction' must not be equal to zero.")
         elif self.type != MV_TYPES.CORRECTION and self.quantity <= 0:
-            raise ValueError("The quantity for this operation must be greater than zero.")
+            raise ValueError(
+                "The quantity for this operation must be greater than zero."
+            )
 
         return self
-    
+
     @model_validator(mode="after")
     def validate_batch_number(self):
 

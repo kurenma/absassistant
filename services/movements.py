@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from calculation.fefo import allocate_fefo
 from calculation.stock import calculate_batch_stock, calculate_stock
-from product import Batch, Location, Movement, MovementAllocation, Product, MV_TYPES
+from product import MV_TYPES, Batch, Location, Movement, MovementAllocation, Product
 
 
 class ProductNotFoundError(Exception):
@@ -17,7 +17,6 @@ class ProductNotFoundError(Exception):
 
 
 class LocationNotFoundError(Exception):
-
     def __init__(self, code: str) -> None:
         self.code = code
         super().__init__(f"Location with code={code!r} not found")
@@ -26,17 +25,13 @@ class LocationNotFoundError(Exception):
 class BatchNotFoundError(Exception):
     def __init__(self, batch_number: str) -> None:
         self.batch_number = batch_number
-        super().__init__(
-            f"Batch with batch_number={batch_number!r} not found"
-        )
+        super().__init__(f"Batch with batch_number={batch_number!r} not found")
 
 
 class DocumentAlreadyExistsError(Exception):
     def __init__(self, document_number: str) -> None:
         self.document_number = document_number
-        super().__init__(
-            f"Document with number={document_number!r} already exists"
-        )
+        super().__init__(f"Document with number={document_number!r} already exists")
 
 
 class InsufficientBatchStockError(Exception):
@@ -78,9 +73,7 @@ def ensure_document_number_available(
     document_number: str,
 ) -> None:
     document_id = session.scalar(
-        select(Movement.id)
-        .where(Movement.document_number == document_number)
-        .limit(1)
+        select(Movement.id).where(Movement.document_number == document_number).limit(1)
     )
 
     if document_id is not None:
@@ -273,7 +266,7 @@ def register_movement(
             mv_type,
             quantity,
             operation_date,
-            batch_number
+            batch_number,
         )
 
         movement = Movement(
