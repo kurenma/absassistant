@@ -66,3 +66,14 @@ class MovementCreateResponse(BaseModel):
     quantity: Decimal
     occurred_at: datetime.date
     stock_after: Decimal
+
+
+class MovementListItem(BaseModel):
+    id: int
+    sku: str
+    location: str
+    type: MV_TYPES
+    quantity: Decimal
+    document_number: str
+    occurred_at: datetime.date
+    created_at: datetime.datetime

@@ -317,3 +317,37 @@ def register_movement(
     except Exception:
         session.rollback()
         raise
+
+
+def list_movements(
+    session: Session,
+    sku: str | None = None,
+    location_code: str | None = None,
+    mv_type: MV_TYPES | None = None,
+    date_from: datetime.date | None = None,
+    date_to: datetime.date | None = None,
+) -> list[tuple[Movement, str, str]]:
+
+    statement = (
+        select(Movement, Product.sku, Location.code)
+        .join(Product, Product.id == Movement.product_id)
+        .join(Location, Location.id == Movement.location_id)
+    )
+
+    if sku is not None:
+        statement = statement.where(Product.sku == sku)
+    if location_code is not None:
+        statement = statement.where(Location.code == location_code)
+    if mv_type is not None:
+        statement = statement.where(Movement.type == mv_type)
+    if date_from is not None:
+        statement = statement.where(Movement.occurred_at >= date_from)
+    if date_to is not None:
+        statement = statement.where(Movement.occurred_at <= date_to)
+
+    statement = statement.order_by(
+        Movement.occurred_at.desc(),
+        Movement.id.desc(),
+    )
+
+    return list(session.execute(statement).tuples().all())

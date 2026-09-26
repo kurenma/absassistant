@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from calculation.fefo import InsufficientStockError
 from database import get_session
-from schemas import MovementCreate, MovementCreateResponse
+from schemas import MovementCreate, MovementCreateResponse, MovementListItem
 from services.movements import (
     BatchNotFoundError,
     DocumentAlreadyExistsError,
@@ -11,9 +11,55 @@ from services.movements import (
     LocationNotFoundError,
     ProductNotFoundError,
     register_movement,
+    list_movements,
 )
+from product import MV_TYPES
+import datetime
 
 router = APIRouter(prefix="/movements", tags=["movements"])
+
+
+@router.get("", response_model=list[MovementListItem])
+def get_movements(
+    sku: str | None = Query(default=None, min_length=1, max_length=64),
+    location: str | None = Query(default=None, min_length=1, max_length=32),
+    movement_type: MV_TYPES | None = Query(default=None, alias="type"),
+    date_from: datetime.date | None = Query(default=None),
+    date_to: datetime.date | None = Query(default=None),
+    session: Session = Depends(get_session),
+):
+    if date_from is not None and date_to is not None and date_from > date_to:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "invalid_date_range",
+                "date_from": date_from.isoformat(),
+                "date_to": date_to.isoformat(),
+            },
+        )
+
+    rows = list_movements(
+        session=session,
+        sku=sku,
+        location_code=location,
+        mv_type=movement_type,
+        date_from=date_from,
+        date_to=date_to,
+    )
+
+    return [
+        MovementListItem(
+            id=movement.id,
+            sku=product_sku,
+            location=location_code,
+            type=movement.type,
+            quantity=movement.quantity,
+            document_number=movement.document_number,
+            occurred_at=movement.occurred_at,
+            created_at=movement.created_at,
+        )
+        for movement, product_sku, location_code in rows
+    ]
 
 
 @router.post(

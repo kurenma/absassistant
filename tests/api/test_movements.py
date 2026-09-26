@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from types import SimpleNamespace
 from unittest.mock import Mock
@@ -190,3 +190,100 @@ def test_openapi_documents_movement_responses():
     operation = app.openapi()["paths"]["/movements"]["post"]
 
     assert {"201", "404", "409", "422"} <= set(operation["responses"])
+
+
+def test_get_movements_returns_filtered_items(client, monkeypatch):
+    fake_movement = SimpleNamespace(
+        id=42,
+        document_number="DOC-1",
+        type=MV_TYPES.CONSUME,
+        quantity=Decimal("2.5"),
+        occurred_at=date(2026, 9, 10),
+        created_at=datetime(2026, 9, 10, 12, 30, tzinfo=timezone.utc),
+    )
+    mock_list = Mock(return_value=[(fake_movement, "SKU-1", "MAIN")])
+    monkeypatch.setattr(movement_api, "list_movements", mock_list)
+
+    response = client.get(
+        "/movements",
+        params={
+            "sku": "SKU-1",
+            "location": "MAIN",
+            "type": "consume",
+            "date_from": "2026-09-01",
+            "date_to": "2026-09-30",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 1
+    assert body[0]["id"] == 42
+    assert body[0]["sku"] == "SKU-1"
+    assert body[0]["location"] == "MAIN"
+    assert body[0]["type"] == "consume"
+    assert Decimal(body[0]["quantity"]) == Decimal("2.5")
+    assert body[0]["document_number"] == "DOC-1"
+    assert body[0]["occurred_at"] == "2026-09-10"
+    assert datetime.fromisoformat(
+        body[0]["created_at"].replace("Z", "+00:00")
+    ) == datetime(2026, 9, 10, 12, 30, tzinfo=timezone.utc)
+
+    call_kwargs = mock_list.call_args.kwargs
+    assert call_kwargs["sku"] == "SKU-1"
+    assert call_kwargs["location_code"] == "MAIN"
+    assert call_kwargs["mv_type"] == MV_TYPES.CONSUME
+    assert call_kwargs["date_from"] == date(2026, 9, 1)
+    assert call_kwargs["date_to"] == date(2026, 9, 30)
+    assert "session" in call_kwargs
+
+
+def test_get_movements_returns_empty_list(client, monkeypatch):
+    mock_list = Mock(return_value=[])
+    monkeypatch.setattr(movement_api, "list_movements", mock_list)
+
+    response = client.get("/movements", params={"sku": "UNKNOWN"})
+
+    assert response.status_code == 200
+    assert response.json() == []
+    mock_list.assert_called_once()
+
+
+def test_get_movements_rejects_reversed_date_range(client, monkeypatch):
+    mock_list = Mock()
+    monkeypatch.setattr(movement_api, "list_movements", mock_list)
+
+    response = client.get(
+        "/movements",
+        params={
+            "date_from": "2026-09-30",
+            "date_to": "2026-09-01",
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": {
+            "code": "invalid_date_range",
+            "date_from": "2026-09-30",
+            "date_to": "2026-09-01",
+        }
+    }
+    mock_list.assert_not_called()
+
+
+def test_get_movements_rejects_unknown_movement_type(client, monkeypatch):
+    mock_list = Mock()
+    monkeypatch.setattr(movement_api, "list_movements", mock_list)
+
+    response = client.get("/movements", params={"type": "transfer"})
+
+    assert response.status_code == 422
+    mock_list.assert_not_called()
+
+
+def test_openapi_documents_get_movement_filters():
+    operation = app.openapi()["paths"]["/movements"]["get"]
+    parameter_names = {parameter["name"] for parameter in operation["parameters"]}
+
+    assert {"sku", "location", "type", "date_from", "date_to"} <= parameter_names
