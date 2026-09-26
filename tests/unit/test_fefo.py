@@ -1,8 +1,10 @@
-from decimal import Decimal
 from dataclasses import dataclass
 from datetime import date
-from calculation.fefo import allocate_fefo, InsufficientStockError
+from decimal import Decimal
+
 import pytest
+
+from calculation.fefo import InsufficientStockError, allocate_fefo
 
 
 @dataclass(frozen=True)
