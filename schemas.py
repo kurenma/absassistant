@@ -55,3 +55,14 @@ class MovementCreate(BaseModel):
             raise ValueError("occurred_at cannot be in the future")
 
         return value
+
+
+class MovementCreateResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    document_number: str
+    type: MV_TYPES
+    quantity: Decimal
+    occurred_at: datetime.date
+    stock_after: Decimal
