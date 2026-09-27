@@ -3,15 +3,15 @@ from datetime import date
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from database import get_session
-from schemas import (
+from app.db.session import get_session
+from app.schemas.stock import (
     StockBatchItem,
     StockDetailResponse,
     StockListItem,
     StockLocationDetail,
 )
-from services.movements import ProductNotFoundError
-from services.stock import get_stock_detail, list_stock
+from app.services.movements import ProductNotFoundError
+from app.services.stock import get_stock_detail, list_stock
 
 stock_router = APIRouter(prefix="/stock", tags=["stock"])
 

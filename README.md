@@ -69,7 +69,7 @@ python -m scripts.seed
 5. Запустите API:
 
 ```bash
-uvicorn main:app --reload
+uvicorn app.main:app --reload
 ```
 
 Скрипт стартовых данных идемпотентен: повторный запуск не создаёт дубли.
@@ -137,11 +137,17 @@ ruff check . --exclude venv --ignore FURB157,B008,DTZ011
 
 ## Архитектура
 
-- `api/` — HTTP-маршруты FastAPI и преобразование результата в схемы ответа;
-- `services/` — сценарии работы с БД и координация расчётов;
-- `calculation/` — детерминированные функции FEFO, остатка и прогноза;
-- `product.py` — SQLAlchemy-модели;
-- `schemas.py` — Pydantic-схемы запросов и ответов;
+Основной код оформлен как Python-пакет `app`:
+
+- `app/main.py` — создание FastAPI-приложения;
+- `app/api/router.py` — сборка общего API-роутера;
+- `app/api/routes/` — HTTP-маршруты и преобразование результатов в ответы;
+- `app/schemas/` — Pydantic-схемы, разделённые по предметным областям;
+- `app/services/` — сценарии работы с БД и координация расчётов;
+- `app/calculations/` — детерминированные функции FEFO, остатка и прогноза;
+- `app/db/models.py` — SQLAlchemy-модели и перечисления;
+- `app/db/session.py` — engine, фабрика сессий и FastAPI-зависимость;
+- `app/core/config.py` — конфигурация из переменных окружения;
 - `migrations/` — миграции Alembic;
 - `scripts/seed.py` — демонстрационный набор данных;
 - `tests/` — unit, API и интеграционные тесты.

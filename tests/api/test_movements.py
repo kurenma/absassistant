@@ -5,11 +5,11 @@ from unittest.mock import Mock
 
 import pytest
 
-from api import movements as movement_api
-from calculation.fefo import InsufficientStockError
-from main import app
-from product import MV_TYPES
-from services.movements import (
+from app.api.routes import movements as movement_api
+from app.calculations.fefo import InsufficientStockError
+from app.db.models import MovementType
+from app.main import app
+from app.services.movements import (
     BatchNotFoundError,
     DocumentAlreadyExistsError,
     InsufficientBatchStockError,
@@ -37,7 +37,7 @@ def test_create_movement_returns_201(client, monkeypatch):
     fake_movement = SimpleNamespace(
         id=42,
         document_number="DOC-1",
-        type=MV_TYPES.RECEIPT,
+        type=MovementType.RECEIPT,
         quantity=Decimal("5"),
         occurred_at=date(2026, 9, 1),
     )
@@ -64,7 +64,7 @@ def test_create_movement_returns_201(client, monkeypatch):
     assert call_kwargs["sku"] == "SKU-1"
     assert call_kwargs["location_code"] == "MAIN"
     assert call_kwargs["document_number"] == "DOC-1"
-    assert call_kwargs["mv_type"] == MV_TYPES.RECEIPT
+    assert call_kwargs["mv_type"] == MovementType.RECEIPT
     assert call_kwargs["quantity"] == Decimal("5")
     assert call_kwargs["operation_date"] == date(2026, 9, 1)
     assert call_kwargs["batch_number"] == "LOT-1"
@@ -196,7 +196,7 @@ def test_get_movements_returns_filtered_items(client, monkeypatch):
     fake_movement = SimpleNamespace(
         id=42,
         document_number="DOC-1",
-        type=MV_TYPES.CONSUME,
+        type=MovementType.CONSUME,
         quantity=Decimal("2.5"),
         occurred_at=date(2026, 9, 10),
         created_at=datetime(2026, 9, 10, 12, 30, tzinfo=timezone.utc),
@@ -236,7 +236,7 @@ def test_get_movements_returns_filtered_items(client, monkeypatch):
     call_kwargs = mock_list.call_args.kwargs
     assert call_kwargs["sku"] == "SKU-1"
     assert call_kwargs["location_code"] == "MAIN"
-    assert call_kwargs["mv_type"] == MV_TYPES.CONSUME
+    assert call_kwargs["mv_type"] == MovementType.CONSUME
     assert call_kwargs["date_from"] == date(2026, 9, 1)
     assert call_kwargs["date_to"] == date(2026, 9, 30)
     assert call_kwargs["limit"] == 50

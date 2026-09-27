@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from services.alerts import list_alerts
+from app.services.alerts import list_alerts
 
 
 @pytest.mark.parametrize(

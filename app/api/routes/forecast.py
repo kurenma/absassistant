@@ -3,16 +3,16 @@ from datetime import date
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from database import get_session
-from schemas import (
+from app.db.session import get_session
+from app.schemas.forecast import (
     ForecastExplanation,
     ForecastPeriod,
     ForecastRequest,
     ForecastResponse,
     ForecastWarning,
 )
-from services.forecast import build_forecast
-from services.movements import LocationNotFoundError, ProductNotFoundError
+from app.services.forecast import build_forecast
+from app.services.movements import LocationNotFoundError, ProductNotFoundError
 
 forecast_router = APIRouter(prefix="/forecast", tags=["forecast"])
 

@@ -4,7 +4,7 @@ from decimal import Decimal
 
 import pytest
 
-from calculation.fefo import InsufficientStockError, allocate_fefo
+from app.calculations.fefo import InsufficientStockError, allocate_fefo
 
 
 @dataclass(frozen=True)

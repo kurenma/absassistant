@@ -96,7 +96,7 @@ class Batch(Base):
     )
 
 
-class MV_TYPES(enum.Enum):
+class MovementType(enum.Enum):
     RECEIPT = "receipt"
     CONSUME = "consume"
     WRITEOFF = "writeoff"
@@ -104,7 +104,7 @@ class MV_TYPES(enum.Enum):
     CORRECTION = "correction"
 
 
-class SUPPLY_STATUS(enum.Enum):
+class SupplyStatus(enum.Enum):
     IN_TRANSIT = "in_transit"
     RECEIVED = "received"
     CANCELLED = "cancelled"
@@ -116,7 +116,7 @@ class Movement(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))
     location_id: Mapped[int] = mapped_column(ForeignKey("locations.id"))
-    type: Mapped[MV_TYPES] = mapped_column(Enum(MV_TYPES))
+    type: Mapped[MovementType] = mapped_column(Enum(MovementType, name="mv_types"))
     quantity: Mapped[Decimal] = mapped_column(Numeric(14, 3))
     document_number: Mapped[str] = mapped_column(String(128), unique=True)
     occurred_at: Mapped[datetime.date] = mapped_column()
@@ -165,7 +165,9 @@ class PurchaseOrder(Base):
     quantity: Mapped[Decimal] = mapped_column(Numeric(14, 3), nullable=False)
     unit_price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     expected_at: Mapped[datetime.date] = mapped_column(nullable=False)
-    status: Mapped[SUPPLY_STATUS] = mapped_column(Enum(SUPPLY_STATUS), nullable=False)
+    status: Mapped[SupplyStatus] = mapped_column(
+        Enum(SupplyStatus, name="supply_status"), nullable=False
+    )
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

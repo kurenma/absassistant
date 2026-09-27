@@ -6,16 +6,16 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from calculation.fefo import InsufficientStockError
-from product import (
-    MV_TYPES,
+from app.calculations.fefo import InsufficientStockError
+from app.db.models import (
     Batch,
     Location,
     Movement,
     MovementAllocation,
+    MovementType,
     Product,
 )
-from services.movements import (
+from app.services.movements import (
     DocumentAlreadyExistsError,
     InsufficientBatchStockError,
     get_batch_stock,
@@ -79,7 +79,7 @@ def register_receipt(
         sku=product.sku,
         location_code=location.code,
         document_number=document_number("RECEIPT"),
-        mv_type=MV_TYPES.RECEIPT,
+        mv_type=MovementType.RECEIPT,
         quantity=quantity,
         operation_date=OPERATION_DATE,
         batch_number=batch_number,
@@ -133,7 +133,7 @@ def test_register_consume_allocates_by_fefo(db_session):
         sku=product.sku,
         location_code=location.code,
         document_number=document_number("CONSUME"),
-        mv_type=MV_TYPES.CONSUME,
+        mv_type=MovementType.CONSUME,
         quantity=Decimal("4"),
         operation_date=OPERATION_DATE,
     )
@@ -171,7 +171,7 @@ def test_insufficient_consume_rolls_back_without_changing_stock(db_session):
             sku=product.sku,
             location_code=location.code,
             document_number=failed_document,
-            mv_type=MV_TYPES.CONSUME,
+            mv_type=MovementType.CONSUME,
             quantity=Decimal("8.5"),
             operation_date=OPERATION_DATE,
         )
@@ -205,7 +205,7 @@ def test_insufficient_writeoff_from_batch_rolls_back(db_session):
             sku=product.sku,
             location_code=location.code,
             document_number=failed_document,
-            mv_type=MV_TYPES.WRITEOFF,
+            mv_type=MovementType.WRITEOFF,
             quantity=Decimal("2"),
             operation_date=OPERATION_DATE,
             batch_number="LOT-SMALL",
@@ -236,7 +236,7 @@ def test_negative_correction_stores_positive_allocation(db_session):
         sku=product.sku,
         location_code=location.code,
         document_number=document_number("CORRECTION"),
-        mv_type=MV_TYPES.CORRECTION,
+        mv_type=MovementType.CORRECTION,
         quantity=Decimal("-3"),
         operation_date=OPERATION_DATE,
         batch_number="LOT-1",
@@ -264,7 +264,7 @@ def test_duplicate_document_rolls_back_second_movement(db_session):
         sku=product.sku,
         location_code=location.code,
         document_number=duplicate_document,
-        mv_type=MV_TYPES.RECEIPT,
+        mv_type=MovementType.RECEIPT,
         quantity=Decimal("5"),
         operation_date=OPERATION_DATE,
         batch_number="LOT-1",
@@ -276,7 +276,7 @@ def test_duplicate_document_rolls_back_second_movement(db_session):
             sku=product.sku,
             location_code=location.code,
             document_number=duplicate_document,
-            mv_type=MV_TYPES.RETURN,
+            mv_type=MovementType.RETURN,
             quantity=Decimal("2"),
             operation_date=OPERATION_DATE,
             batch_number="LOT-1",
@@ -287,5 +287,5 @@ def test_duplicate_document_rolls_back_second_movement(db_session):
     ).all()
 
     assert len(movements) == 1
-    assert movements[0].type == MV_TYPES.RECEIPT
+    assert movements[0].type == MovementType.RECEIPT
     assert get_current_stock(db_session, product.id, location.id) == Decimal("5.000")

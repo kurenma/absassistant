@@ -5,17 +5,17 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from database import SessionLocal
-from product import (
-    MV_TYPES,
-    SUPPLY_STATUS,
+from app.db.models import (
     Batch,
     Location,
     Movement,
+    MovementType,
     Product,
     PurchaseOrder,
+    SupplyStatus,
 )
-from services.movements import register_movement
+from app.db.session import SessionLocal
+from app.services.movements import register_movement
 
 
 @dataclass(frozen=True)
@@ -23,7 +23,7 @@ class MovementSeed:
     sku: str
     location: str
     document_number: str
-    type: MV_TYPES
+    type: MovementType
     quantity: Decimal
     occurred_at: datetime.date
     batch_number: str | None = None
@@ -135,7 +135,7 @@ def _create_purchase_order_if_missing(
             quantity=Decimal("24"),
             unit_price=Decimal("780.00"),
             expected_at=expected_at,
-            status=SUPPLY_STATUS.IN_TRANSIT,
+            status=SupplyStatus.IN_TRANSIT,
         )
     )
     session.commit()
@@ -207,7 +207,7 @@ def seed_database(session: Session, as_of: datetime.date | None = None) -> None:
             oil.sku,
             location.code,
             "SEED-OIL-RECEIPT-001",
-            MV_TYPES.RECEIPT,
+            MovementType.RECEIPT,
             Decimal("50"),
             as_of - datetime.timedelta(days=60),
             oil_batch.batch_number,
@@ -216,7 +216,7 @@ def seed_database(session: Session, as_of: datetime.date | None = None) -> None:
             oil.sku,
             location.code,
             "SEED-OIL-CONSUME-001",
-            MV_TYPES.CONSUME,
+            MovementType.CONSUME,
             Decimal("10"),
             as_of - datetime.timedelta(days=14),
         ),
@@ -224,7 +224,7 @@ def seed_database(session: Session, as_of: datetime.date | None = None) -> None:
             oil.sku,
             location.code,
             "SEED-OIL-CONSUME-002",
-            MV_TYPES.CONSUME,
+            MovementType.CONSUME,
             Decimal("20"),
             as_of - datetime.timedelta(days=1),
         ),
@@ -232,7 +232,7 @@ def seed_database(session: Session, as_of: datetime.date | None = None) -> None:
             cream.sku,
             location.code,
             "SEED-CREAM-RECEIPT-001",
-            MV_TYPES.RECEIPT,
+            MovementType.RECEIPT,
             Decimal("12"),
             as_of - datetime.timedelta(days=40),
             cream_batch.batch_number,
@@ -241,7 +241,7 @@ def seed_database(session: Session, as_of: datetime.date | None = None) -> None:
             cream.sku,
             location.code,
             "SEED-CREAM-CONSUME-001",
-            MV_TYPES.CONSUME,
+            MovementType.CONSUME,
             Decimal("11"),
             as_of - datetime.timedelta(days=1),
         ),
@@ -249,7 +249,7 @@ def seed_database(session: Session, as_of: datetime.date | None = None) -> None:
             towel.sku,
             location.code,
             "SEED-TOWEL-RECEIPT-001",
-            MV_TYPES.RECEIPT,
+            MovementType.RECEIPT,
             Decimal("100"),
             as_of - datetime.timedelta(days=45),
             towel_batch.batch_number,

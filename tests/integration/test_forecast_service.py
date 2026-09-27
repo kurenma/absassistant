@@ -4,16 +4,16 @@ from uuid import uuid4
 
 import pytest
 
-from product import (
-    MV_TYPES,
-    SUPPLY_STATUS,
+from app.db.models import (
     Batch,
     Location,
+    MovementType,
     Product,
     PurchaseOrder,
+    SupplyStatus,
 )
-from services.forecast import build_forecast
-from services.movements import register_movement
+from app.services.forecast import build_forecast
+from app.services.movements import register_movement
 
 AS_OF = date(2026, 9, 15)
 
@@ -77,7 +77,7 @@ def test_build_forecast_uses_stock_orders_price_and_supplier_terms(db_session):
         sku=product.sku,
         location_code=location.code,
         document_number=f"RECEIPT-{uuid4().hex}",
-        mv_type=MV_TYPES.RECEIPT,
+        mv_type=MovementType.RECEIPT,
         quantity=Decimal("10"),
         operation_date=date(2026, 6, 1),
         batch_number=batch.batch_number,
@@ -87,7 +87,7 @@ def test_build_forecast_uses_stock_orders_price_and_supplier_terms(db_session):
         sku=product.sku,
         location_code=location.code,
         document_number=f"CONSUME-{uuid4().hex}",
-        mv_type=MV_TYPES.CONSUME,
+        mv_type=MovementType.CONSUME,
         quantity=Decimal("9"),
         operation_date=AS_OF,
     )
@@ -98,7 +98,7 @@ def test_build_forecast_uses_stock_orders_price_and_supplier_terms(db_session):
         location,
         "1",
         date(2026, 9, 1),
-        SUPPLY_STATUS.IN_TRANSIT,
+        SupplyStatus.IN_TRANSIT,
     )
     add_order(
         db_session,
@@ -106,7 +106,7 @@ def test_build_forecast_uses_stock_orders_price_and_supplier_terms(db_session):
         location,
         "1",
         date(2026, 10, 1),
-        SUPPLY_STATUS.IN_TRANSIT,
+        SupplyStatus.IN_TRANSIT,
     )
     add_order(
         db_session,
@@ -114,7 +114,7 @@ def test_build_forecast_uses_stock_orders_price_and_supplier_terms(db_session):
         location,
         "10",
         date(2026, 10, 20),
-        SUPPLY_STATUS.IN_TRANSIT,
+        SupplyStatus.IN_TRANSIT,
     )
     add_order(
         db_session,
@@ -122,7 +122,7 @@ def test_build_forecast_uses_stock_orders_price_and_supplier_terms(db_session):
         location,
         "20",
         date(2026, 10, 1),
-        SUPPLY_STATUS.CANCELLED,
+        SupplyStatus.CANCELLED,
     )
     add_order(
         db_session,
@@ -130,7 +130,7 @@ def test_build_forecast_uses_stock_orders_price_and_supplier_terms(db_session):
         location,
         "20",
         date(2026, 10, 1),
-        SUPPLY_STATUS.RECEIVED,
+        SupplyStatus.RECEIVED,
     )
 
     result = build_forecast(
@@ -170,7 +170,7 @@ def test_build_forecast_documents_month_assumption(db_session):
         sku=product.sku,
         location_code=location.code,
         document_number=f"RECEIPT-{uuid4().hex}",
-        mv_type=MV_TYPES.RECEIPT,
+        mv_type=MovementType.RECEIPT,
         quantity=Decimal("1"),
         operation_date=AS_OF,
         batch_number=batch.batch_number,

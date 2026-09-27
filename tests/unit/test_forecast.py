@@ -3,7 +3,7 @@ from decimal import Decimal
 
 import pytest
 
-from calculation.forecast import (
+from app.calculations.forecast import (
     ForecastInputs,
     calculate_estimated_cost,
     calculate_forecast,

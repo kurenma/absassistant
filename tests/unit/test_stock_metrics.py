@@ -2,7 +2,7 @@ from decimal import Decimal
 
 import pytest
 
-from calculation.stock_metrics import (
+from app.calculations.stock_metrics import (
     calculate_average_daily_consumption,
     calculate_days_of_stock,
 )

@@ -5,9 +5,9 @@ from uuid import uuid4
 import pytest
 from sqlalchemy.orm import Session
 
-from product import MV_TYPES, Batch, Location, Product
-from services.movements import ProductNotFoundError, register_movement
-from services.stock import get_stock_detail, list_stock
+from app.db.models import Batch, Location, MovementType, Product
+from app.services.movements import ProductNotFoundError, register_movement
+from app.services.stock import get_stock_detail, list_stock
 
 AS_OF = date(2026, 9, 15)
 
@@ -59,7 +59,7 @@ def add_movement(
     session: Session,
     product: Product,
     location: Location,
-    mv_type: MV_TYPES,
+    mv_type: MovementType,
     quantity: Decimal,
     operation_date: date,
     batch_number: str | None = None,
@@ -92,7 +92,7 @@ def test_list_stock_uses_exact_90_day_window_and_as_of_date(db_session):
         db_session,
         product,
         location,
-        MV_TYPES.RECEIPT,
+        MovementType.RECEIPT,
         Decimal("100"),
         date(2026, 6, 1),
         batch.batch_number,
@@ -101,7 +101,7 @@ def test_list_stock_uses_exact_90_day_window_and_as_of_date(db_session):
         db_session,
         product,
         location,
-        MV_TYPES.CONSUME,
+        MovementType.CONSUME,
         Decimal("7"),
         window_start - timedelta(days=1),
     )
@@ -109,7 +109,7 @@ def test_list_stock_uses_exact_90_day_window_and_as_of_date(db_session):
         db_session,
         product,
         location,
-        MV_TYPES.CONSUME,
+        MovementType.CONSUME,
         Decimal("9"),
         window_start,
     )
@@ -117,7 +117,7 @@ def test_list_stock_uses_exact_90_day_window_and_as_of_date(db_session):
         db_session,
         product,
         location,
-        MV_TYPES.CONSUME,
+        MovementType.CONSUME,
         Decimal("9"),
         AS_OF,
     )
@@ -125,7 +125,7 @@ def test_list_stock_uses_exact_90_day_window_and_as_of_date(db_session):
         db_session,
         product,
         location,
-        MV_TYPES.WRITEOFF,
+        MovementType.WRITEOFF,
         Decimal("4"),
         AS_OF,
         batch.batch_number,
@@ -134,7 +134,7 @@ def test_list_stock_uses_exact_90_day_window_and_as_of_date(db_session):
         db_session,
         product,
         location,
-        MV_TYPES.CONSUME,
+        MovementType.CONSUME,
         Decimal("50"),
         AS_OF + timedelta(days=1),
     )
@@ -191,7 +191,7 @@ def test_list_stock_chooses_nearest_nonexpired_batch_with_stock(db_session):
             db_session,
             product,
             location,
-            MV_TYPES.RECEIPT,
+            MovementType.RECEIPT,
             quantity,
             date(2026, 9, 1),
             batch.batch_number,
@@ -201,7 +201,7 @@ def test_list_stock_chooses_nearest_nonexpired_batch_with_stock(db_session):
         db_session,
         product,
         location,
-        MV_TYPES.WRITEOFF,
+        MovementType.WRITEOFF,
         Decimal("2"),
         date(2026, 9, 14),
         empty.batch_number,
@@ -240,7 +240,7 @@ def test_list_stock_sorts_by_sku_and_location(db_session):
             db_session,
             product,
             location,
-            MV_TYPES.RECEIPT,
+            MovementType.RECEIPT,
             Decimal("1"),
             date(2026, 9, 1),
             batch.batch_number,
@@ -300,7 +300,7 @@ def test_get_stock_detail_groups_positive_batches_and_receipt_documents(db_sessi
         db_session,
         product,
         location,
-        MV_TYPES.RECEIPT,
+        MovementType.RECEIPT,
         Decimal("5"),
         date(2026, 9, 1),
         expired.batch_number,
@@ -309,7 +309,7 @@ def test_get_stock_detail_groups_positive_batches_and_receipt_documents(db_sessi
         db_session,
         product,
         location,
-        MV_TYPES.RECEIPT,
+        MovementType.RECEIPT,
         Decimal("2"),
         date(2026, 9, 1),
         empty.batch_number,
@@ -318,7 +318,7 @@ def test_get_stock_detail_groups_positive_batches_and_receipt_documents(db_sessi
         db_session,
         product,
         location,
-        MV_TYPES.WRITEOFF,
+        MovementType.WRITEOFF,
         Decimal("2"),
         date(2026, 9, 14),
         empty.batch_number,
@@ -327,7 +327,7 @@ def test_get_stock_detail_groups_positive_batches_and_receipt_documents(db_sessi
         db_session,
         product,
         location,
-        MV_TYPES.RECEIPT,
+        MovementType.RECEIPT,
         Decimal("3"),
         date(2026, 9, 2),
         active.batch_number,
@@ -336,7 +336,7 @@ def test_get_stock_detail_groups_positive_batches_and_receipt_documents(db_sessi
         db_session,
         product,
         location,
-        MV_TYPES.RECEIPT,
+        MovementType.RECEIPT,
         Decimal("2"),
         date(2026, 9, 3),
         active.batch_number,
@@ -345,7 +345,7 @@ def test_get_stock_detail_groups_positive_batches_and_receipt_documents(db_sessi
         db_session,
         product,
         location,
-        MV_TYPES.WRITEOFF,
+        MovementType.WRITEOFF,
         Decimal("1"),
         date(2026, 9, 14),
         active.batch_number,
@@ -354,7 +354,7 @@ def test_get_stock_detail_groups_positive_batches_and_receipt_documents(db_sessi
         db_session,
         product,
         location,
-        MV_TYPES.RECEIPT,
+        MovementType.RECEIPT,
         Decimal("10"),
         AS_OF + timedelta(days=1),
         active.batch_number,
@@ -363,7 +363,7 @@ def test_get_stock_detail_groups_positive_batches_and_receipt_documents(db_sessi
         db_session,
         product,
         second_location,
-        MV_TYPES.RECEIPT,
+        MovementType.RECEIPT,
         Decimal("7"),
         date(2026, 9, 4),
         other_location_batch.batch_number,

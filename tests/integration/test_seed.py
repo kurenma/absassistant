@@ -3,7 +3,7 @@ import datetime
 import pytest
 from sqlalchemy import func, select
 
-from product import Batch, Movement, Product, PurchaseOrder
+from app.db.models import Batch, Movement, Product, PurchaseOrder
 from scripts.seed import seed_database
 
 

@@ -3,16 +3,16 @@ import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from calculation.fefo import InsufficientStockError
-from database import get_session
-from product import MV_TYPES
-from schemas import (
+from app.calculations.fefo import InsufficientStockError
+from app.db.models import MovementType
+from app.db.session import get_session
+from app.schemas.movements import (
     MovementCreate,
     MovementCreateResponse,
     MovementListItem,
     MovementListResponse,
 )
-from services.movements import (
+from app.services.movements import (
     BatchNotFoundError,
     DocumentAlreadyExistsError,
     InsufficientBatchStockError,
@@ -29,7 +29,7 @@ movements_router = APIRouter(prefix="/movements", tags=["movements"])
 def get_movements(
     sku: str | None = Query(default=None, min_length=1, max_length=64),
     location: str | None = Query(default=None, min_length=1, max_length=32),
-    movement_type: MV_TYPES | None = Query(default=None, alias="type"),
+    movement_type: MovementType | None = Query(default=None, alias="type"),
     date_from: datetime.date | None = Query(default=None),
     date_to: datetime.date | None = Query(default=None),
     limit: int = Query(default=50, ge=1, le=100),

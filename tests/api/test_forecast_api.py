@@ -2,15 +2,15 @@ from datetime import date
 from decimal import Decimal
 from unittest.mock import Mock
 
-from api import forecast as forecast_api
-from calculation.forecast import ForecastMetrics
-from main import app
-from services.forecast import (
+from app.api.routes import forecast as forecast_api
+from app.calculations.forecast import ForecastMetrics
+from app.main import app
+from app.services.forecast import (
     ForecastExplanationData,
     ForecastResult,
     ForecastWarningData,
 )
-from services.movements import ProductNotFoundError
+from app.services.movements import ProductNotFoundError
 
 
 def make_forecast_result():

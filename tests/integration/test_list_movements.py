@@ -5,8 +5,8 @@ from uuid import uuid4
 import pytest
 from sqlalchemy.orm import Session
 
-from product import MV_TYPES, Batch, Location, Product
-from services.movements import list_movements, register_movement
+from app.db.models import Batch, Location, MovementType, Product
+from app.services.movements import list_movements, register_movement
 
 
 def create_inventory(session: Session) -> tuple[Product, Location, Batch]:
@@ -46,11 +46,11 @@ def add_movement(
     location: Location,
     batch: Batch,
     document_prefix: str,
-    mv_type: MV_TYPES,
+    mv_type: MovementType,
     quantity: Decimal,
     operation_date: date,
 ):
-    batch_number = None if mv_type == MV_TYPES.CONSUME else batch.batch_number
+    batch_number = None if mv_type == MovementType.CONSUME else batch.batch_number
     return register_movement(
         session=session,
         sku=product.sku,
@@ -72,7 +72,7 @@ def test_list_movements_orders_by_date_and_id_descending(db_session):
         location,
         batch,
         "FIRST",
-        MV_TYPES.RECEIPT,
+        MovementType.RECEIPT,
         Decimal("2"),
         date(2026, 9, 1),
     )
@@ -82,7 +82,7 @@ def test_list_movements_orders_by_date_and_id_descending(db_session):
         location,
         batch,
         "SECOND",
-        MV_TYPES.RETURN,
+        MovementType.RETURN,
         Decimal("1"),
         date(2026, 9, 1),
     )
@@ -92,7 +92,7 @@ def test_list_movements_orders_by_date_and_id_descending(db_session):
         location,
         batch,
         "THIRD",
-        MV_TYPES.RECEIPT,
+        MovementType.RECEIPT,
         Decimal("3"),
         date(2026, 9, 2),
     )
@@ -123,7 +123,7 @@ def test_list_movements_combines_all_filters(db_session):
         location,
         batch,
         "OUTSIDE-DATE",
-        MV_TYPES.RETURN,
+        MovementType.RETURN,
         Decimal("1"),
         date(2026, 9, 1),
     )
@@ -133,7 +133,7 @@ def test_list_movements_combines_all_filters(db_session):
         location,
         batch,
         "EXPECTED",
-        MV_TYPES.RETURN,
+        MovementType.RETURN,
         Decimal("2"),
         date(2026, 9, 10),
     )
@@ -143,7 +143,7 @@ def test_list_movements_combines_all_filters(db_session):
         location,
         batch,
         "WRONG-TYPE",
-        MV_TYPES.RECEIPT,
+        MovementType.RECEIPT,
         Decimal("3"),
         date(2026, 9, 10),
     )
@@ -153,7 +153,7 @@ def test_list_movements_combines_all_filters(db_session):
         other_location,
         other_batch,
         "WRONG-INVENTORY",
-        MV_TYPES.RETURN,
+        MovementType.RETURN,
         Decimal("4"),
         date(2026, 9, 10),
     )
@@ -162,7 +162,7 @@ def test_list_movements_combines_all_filters(db_session):
         db_session,
         sku=product.sku,
         location_code=location.code,
-        mv_type=MV_TYPES.RETURN,
+        mv_type=MovementType.RETURN,
         date_from=date(2026, 9, 5),
         date_to=date(2026, 9, 15),
     )
@@ -185,7 +185,7 @@ def test_list_movements_paginates_without_changing_total(db_session):
             location,
             batch,
             f"PAGE-{index}",
-            MV_TYPES.RECEIPT,
+            MovementType.RECEIPT,
             Decimal("1"),
             date(2026, 9, index),
         )

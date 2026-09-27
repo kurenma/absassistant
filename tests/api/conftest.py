@@ -3,8 +3,8 @@ from unittest.mock import Mock
 import pytest
 from fastapi.testclient import TestClient
 
-from database import get_session
-from main import app
+from app.db.session import get_session
+from app.main import app
 
 
 @pytest.fixture

@@ -4,9 +4,9 @@ from uuid import uuid4
 
 import pytest
 
-from product import MV_TYPES, Batch, Location, Product
-from services.alerts import list_alerts
-from services.movements import register_movement
+from app.db.models import Batch, Location, MovementType, Product
+from app.services.alerts import list_alerts
+from app.services.movements import register_movement
 
 AS_OF = date(2026, 9, 15)
 
@@ -54,7 +54,7 @@ def add_movement(
     product,
     location,
     *,
-    mv_type: MV_TYPES,
+    mv_type: MovementType,
     quantity: str,
     occurred_at: date,
     batch_number: str | None = None,
@@ -83,7 +83,7 @@ def test_list_alerts_detects_shortage_expiry_and_inactivity(db_session):
         db_session,
         shortage_product,
         shortage_location,
-        mv_type=MV_TYPES.RECEIPT,
+        mv_type=MovementType.RECEIPT,
         quantity="10",
         occurred_at=date(2026, 6, 1),
         batch_number=shortage_batch.batch_number,
@@ -92,7 +92,7 @@ def test_list_alerts_detects_shortage_expiry_and_inactivity(db_session):
         db_session,
         shortage_product,
         shortage_location,
-        mv_type=MV_TYPES.CONSUME,
+        mv_type=MovementType.CONSUME,
         quantity="9",
         occurred_at=AS_OF,
     )
@@ -107,7 +107,7 @@ def test_list_alerts_detects_shortage_expiry_and_inactivity(db_session):
         db_session,
         critical_product,
         critical_location,
-        mv_type=MV_TYPES.RECEIPT,
+        mv_type=MovementType.RECEIPT,
         quantity="5",
         occurred_at=date(2026, 6, 1),
         batch_number=critical_batch.batch_number,
@@ -116,7 +116,7 @@ def test_list_alerts_detects_shortage_expiry_and_inactivity(db_session):
         db_session,
         critical_product,
         critical_location,
-        mv_type=MV_TYPES.CONSUME,
+        mv_type=MovementType.CONSUME,
         quantity="5",
         occurred_at=AS_OF,
     )
@@ -131,7 +131,7 @@ def test_list_alerts_detects_shortage_expiry_and_inactivity(db_session):
         db_session,
         expiry_product,
         expiry_location,
-        mv_type=MV_TYPES.RECEIPT,
+        mv_type=MovementType.RECEIPT,
         quantity="5",
         occurred_at=AS_OF,
         batch_number=expiry_batch.batch_number,
@@ -146,7 +146,7 @@ def test_list_alerts_detects_shortage_expiry_and_inactivity(db_session):
         db_session,
         inactive_product,
         inactive_location,
-        mv_type=MV_TYPES.RECEIPT,
+        mv_type=MovementType.RECEIPT,
         quantity="3",
         occurred_at=date(2026, 8, 15),
         batch_number=inactive_batch.batch_number,
@@ -205,7 +205,7 @@ def test_list_alerts_respects_location_and_thresholds(db_session):
         db_session,
         product,
         location,
-        mv_type=MV_TYPES.RECEIPT,
+        mv_type=MovementType.RECEIPT,
         quantity="2",
         occurred_at=date(2026, 8, 25),
         batch_number=batch.batch_number,
@@ -252,7 +252,7 @@ def test_list_alerts_ignores_expiring_batch_without_stock(db_session):
         db_session,
         product,
         location,
-        mv_type=MV_TYPES.RECEIPT,
+        mv_type=MovementType.RECEIPT,
         quantity="2",
         occurred_at=AS_OF,
         batch_number=batch.batch_number,
@@ -261,7 +261,7 @@ def test_list_alerts_ignores_expiring_batch_without_stock(db_session):
         db_session,
         product,
         location,
-        mv_type=MV_TYPES.WRITEOFF,
+        mv_type=MovementType.WRITEOFF,
         quantity="2",
         occurred_at=AS_OF,
         batch_number=batch.batch_number,

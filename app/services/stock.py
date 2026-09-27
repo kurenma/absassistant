@@ -6,20 +6,20 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from calculation.stock import calculate_batch_stock, calculate_stock
-from calculation.stock_metrics import (
+from app.calculations.stock import calculate_batch_stock, calculate_stock
+from app.calculations.stock_metrics import (
     calculate_average_daily_consumption,
     calculate_days_of_stock,
 )
-from product import (
-    MV_TYPES,
+from app.db.models import (
     Batch,
     Location,
     Movement,
     MovementAllocation,
+    MovementType,
     Product,
 )
-from services.movements import ProductNotFoundError
+from app.services.movements import ProductNotFoundError
 
 
 @dataclass
@@ -64,7 +64,12 @@ CONSUMPTION_WINDOW_DAYS = 90
 
 
 def list_stock(session: Session, as_of: datetime.date) -> list[StockSummary]:
+    """Принимает сессию и дату актуальности остатка.
 
+    Группирует движения по товарам и объектам, рассчитывает текущий остаток,
+    средний расход за 90 дней, запас в днях и ближайший действующий срок
+    годности. Возвращает отсортированный список сводных остатков.
+    """
     window_start = as_of - datetime.timedelta(days=CONSUMPTION_WINDOW_DAYS - 1)
 
     movements_statement = (
@@ -118,7 +123,7 @@ def list_stock(session: Session, as_of: datetime.date) -> list[StockSummary]:
 
         bucket["stock_movements"].append((mv_type, quantity))
 
-        if mv_type == MV_TYPES.CONSUME and window_start <= occurred_at <= as_of:
+        if mv_type == MovementType.CONSUME and window_start <= occurred_at <= as_of:
             bucket["consumption_90d"] += quantity
 
     allocations_statement = (
@@ -212,6 +217,12 @@ def get_stock_detail(
     sku: str,
     as_of: datetime.date,
 ) -> ProductStockDetail:
+    """Принимает сессию, SKU и дату актуальности.
+
+    Находит товар, восстанавливает остатки его партий из распределений движений
+    и группирует партии по объектам. Возвращает детализацию товара; для
+    неизвестного SKU выбрасывает ``ProductNotFoundError``.
+    """
     product = session.scalar(select(Product).where(Product.sku == sku))
     if product is None:
         raise ProductNotFoundError(sku)
@@ -283,7 +294,7 @@ def get_stock_detail(
         batch["location"] = location_code
         batch["allocations"].append((mv_type, mv_quantity, allocated_quantity))
         if (
-            mv_type == MV_TYPES.RECEIPT
+            mv_type == MovementType.RECEIPT
             and document_number not in batch["receipt_documents"]
         ):
             batch["receipt_documents"].append(document_number)

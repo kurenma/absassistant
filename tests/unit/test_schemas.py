@@ -4,8 +4,9 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
-from product import MV_TYPES
-from schemas import ForecastRequest, MovementCreate
+from app.db.models import MovementType
+from app.schemas.forecast import ForecastRequest
+from app.schemas.movements import MovementCreate
 
 
 def _today_minus(days: int = 1) -> date:
@@ -18,7 +19,7 @@ def make_payload(**overrides) -> dict:
         "sku": "SKU-1",
         "location": "NN-1",
         "document_number": "DOC-1",
-        "type": MV_TYPES.RECEIPT,
+        "type": MovementType.RECEIPT,
         "quantity": Decimal("5"),
         "occurred_at": _today_minus(1),
         "batch_number": "LOT-1",
@@ -31,7 +32,7 @@ def test_valid_receipt_is_created():
 
     movement = MovementCreate(**make_payload(type="receipt"))
 
-    assert movement.type == MV_TYPES.RECEIPT
+    assert movement.type == MovementType.RECEIPT
     assert movement.batch_number == "LOT-1"
     assert movement.quantity == Decimal("5")
 
@@ -40,20 +41,25 @@ def test_valid_consume_without_batch_number():
 
     movement = MovementCreate(**make_payload(type="consume", batch_number=None))
 
-    assert movement.type == MV_TYPES.CONSUME
+    assert movement.type == MovementType.CONSUME
 
 
 def test_negative_correction_is_allowed():
 
     movement = MovementCreate(**make_payload(type="correction", quantity=Decimal("-3")))
 
-    assert movement.type == MV_TYPES.CORRECTION
+    assert movement.type == MovementType.CORRECTION
     assert movement.quantity == Decimal("-3")
 
 
 @pytest.mark.parametrize(
     "mv_type",
-    [MV_TYPES.RECEIPT, MV_TYPES.CONSUME, MV_TYPES.WRITEOFF, MV_TYPES.RETURN],
+    [
+        MovementType.RECEIPT,
+        MovementType.CONSUME,
+        MovementType.WRITEOFF,
+        MovementType.RETURN,
+    ],
 )
 def test_non_correction_quantity_must_be_positive(mv_type):
 
@@ -66,12 +72,19 @@ def test_non_correction_quantity_must_be_positive(mv_type):
 def test_correction_quantity_cannot_be_zero():
 
     with pytest.raises(ValidationError):
-        MovementCreate(**make_payload(type=MV_TYPES.CORRECTION, quantity=Decimal("0")))
+        MovementCreate(
+            **make_payload(type=MovementType.CORRECTION, quantity=Decimal("0"))
+        )
 
 
 @pytest.mark.parametrize(
     "mv_type",
-    [MV_TYPES.RECEIPT, MV_TYPES.CORRECTION, MV_TYPES.WRITEOFF, MV_TYPES.RETURN],
+    [
+        MovementType.RECEIPT,
+        MovementType.CORRECTION,
+        MovementType.WRITEOFF,
+        MovementType.RETURN,
+    ],
 )
 def test_batch_number_is_required_for_explicit_batch_operations(mv_type):
 

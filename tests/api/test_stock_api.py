@@ -3,9 +3,9 @@ from decimal import Decimal
 from types import SimpleNamespace
 from unittest.mock import Mock
 
-from api import stock as stock_api
-from main import app
-from services.movements import ProductNotFoundError
+from app.api.routes import stock as stock_api
+from app.main import app
+from app.services.movements import ProductNotFoundError
 
 
 def test_get_stock_returns_calculated_summaries(client, monkeypatch):

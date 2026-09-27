@@ -2,9 +2,9 @@ from datetime import date
 from decimal import Decimal
 from unittest.mock import Mock
 
-from api import alerts as alerts_api
-from main import app
-from services.alerts import AlertResult
+from app.api.routes import alerts as alerts_api
+from app.main import app
+from app.services.alerts import AlertResult
 
 
 def test_get_alerts_returns_serialized_indicators(client, monkeypatch):

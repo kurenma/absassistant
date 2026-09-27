@@ -5,23 +5,23 @@ from decimal import Decimal
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from calculation.forecast import (
+from app.calculations.forecast import (
     ForecastInputs,
     ForecastMetrics,
     calculate_forecast,
     resolve_horizon_days,
 )
-from calculation.stock import calculate_stock
-from calculation.stock_metrics import calculate_average_daily_consumption
-from product import (
-    MV_TYPES,
-    SUPPLY_STATUS,
+from app.calculations.stock import calculate_stock
+from app.calculations.stock_metrics import calculate_average_daily_consumption
+from app.db.models import (
     Batch,
     Movement,
     MovementAllocation,
+    MovementType,
     PurchaseOrder,
+    SupplyStatus,
 )
-from services.movements import resolve_product_and_location
+from app.services.movements import resolve_product_and_location
 
 
 @dataclass(frozen=True)
@@ -58,6 +58,12 @@ def build_forecast(
     safety_stock_days: int,
     as_of: datetime.date,
 ) -> ForecastResult:
+    """Принимает сессию, товар, объект, горизонт, страховой запас и дату расчёта.
+
+    Загружает движения, поставки в пути, условия поставщика и последнюю цену,
+    после чего вызывает детерминированный расчётный модуль. Возвращает прогноз
+    закупки с объяснением исходных данных, формул, допущений и предупреждений.
+    """
     product, location = resolve_product_and_location(session, sku, location_code)
     resolved_horizon_days = resolve_horizon_days(horizon_days, horizon_months)
     period_to = as_of + datetime.timedelta(days=resolved_horizon_days - 1)
@@ -81,7 +87,7 @@ def build_forecast(
         (
             quantity
             for mv_type, quantity, occurred_at in movement_rows
-            if mv_type == MV_TYPES.CONSUME
+            if mv_type == MovementType.CONSUME
             and consumption_window_start <= occurred_at <= as_of
         ),
         start=Decimal("0"),
@@ -95,7 +101,7 @@ def build_forecast(
         select(func.coalesce(func.sum(PurchaseOrder.quantity), 0)).where(
             PurchaseOrder.product_id == product.id,
             PurchaseOrder.location_id == location.id,
-            PurchaseOrder.status == SUPPLY_STATUS.IN_TRANSIT,
+            PurchaseOrder.status == SupplyStatus.IN_TRANSIT,
             PurchaseOrder.expected_at <= period_to,
         )
     )
@@ -112,7 +118,7 @@ def build_forecast(
         .where(
             Movement.product_id == product.id,
             Movement.location_id == location.id,
-            Movement.type == MV_TYPES.RECEIPT,
+            Movement.type == MovementType.RECEIPT,
             Movement.occurred_at <= as_of,
         )
         .order_by(Movement.occurred_at.desc(), Movement.id.desc())

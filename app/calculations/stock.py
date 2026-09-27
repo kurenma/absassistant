@@ -1,32 +1,36 @@
 from collections.abc import Iterable
 from decimal import Decimal
 
-from product import MV_TYPES
+from app.db.models import MovementType
 
 
-def calculate_stock(movements: Iterable[tuple[MV_TYPES, Decimal]]) -> Decimal:
+def calculate_stock(movements: Iterable[tuple[MovementType, Decimal]]) -> Decimal:
 
     stock = Decimal("0")
 
     for mv_type, quantity in movements:
-        if mv_type in (MV_TYPES.RECEIPT, MV_TYPES.RETURN, MV_TYPES.CORRECTION):
+        if mv_type in (
+            MovementType.RECEIPT,
+            MovementType.RETURN,
+            MovementType.CORRECTION,
+        ):
             stock += quantity
-        elif mv_type in (MV_TYPES.CONSUME, MV_TYPES.WRITEOFF):
+        elif mv_type in (MovementType.CONSUME, MovementType.WRITEOFF):
             stock -= quantity
 
     return stock
 
 
 def calculate_batch_stock(
-    allocations: Iterable[tuple[MV_TYPES, Decimal, Decimal]],
+    allocations: Iterable[tuple[MovementType, Decimal, Decimal]],
 ) -> Decimal:
 
-    normalized_movements: list[tuple[MV_TYPES, Decimal]] = []
+    normalized_movements: list[tuple[MovementType, Decimal]] = []
 
     for mv_type, mv_quantity, allocated_quantity in allocations:
         signed_quantity = allocated_quantity
 
-        if mv_type == MV_TYPES.CORRECTION and mv_quantity < 0:
+        if mv_type == MovementType.CORRECTION and mv_quantity < 0:
             signed_quantity = -allocated_quantity
 
         normalized_movements.append((mv_type, signed_quantity))

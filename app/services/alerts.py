@@ -7,9 +7,9 @@ from typing import Literal
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
 
-from calculation.stock import calculate_batch_stock
-from product import Batch, Location, Movement, MovementAllocation, Product
-from services.stock import list_stock
+from app.calculations.stock import calculate_batch_stock
+from app.db.models import Batch, Location, Movement, MovementAllocation, Product
+from app.services.stock import list_stock
 
 AlertType = Literal["shortage_risk", "expiry", "no_movement"]
 AlertLevel = Literal["warning", "critical"]
@@ -33,6 +33,12 @@ def list_alerts(
     expiry_warning_days: int = 30,
     inactivity_days: int = 30,
 ) -> list[AlertResult]:
+    """Принимает сессию, дату, фильтр объекта и пороги предупреждений.
+
+    Выявляет риск дефицита, партии с истёкшим или близким сроком годности и
+    позиции без недавнего движения. Возвращает отсортированный список
+    предупреждений с уровнем важности и показателями расчёта.
+    """
     if expiry_warning_days <= 0:
         raise ValueError("expiry_warning_days must be positive")
     if inactivity_days <= 0:

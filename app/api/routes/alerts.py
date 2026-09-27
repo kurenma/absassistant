@@ -3,9 +3,9 @@ from datetime import date
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from database import get_session
-from schemas import AlertItem
-from services.alerts import list_alerts
+from app.db.session import get_session
+from app.schemas.alerts import AlertItem
+from app.services.alerts import list_alerts
 
 alerts_router = APIRouter(prefix="/alerts", tags=["alerts"])
 

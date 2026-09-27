@@ -5,8 +5,8 @@ from unittest.mock import Mock
 
 import pytest
 
-from product import MV_TYPES
-from services import movements as movement_service
+from app.db.models import MovementType
+from app.services import movements as movement_service
 
 OPERATION_DATE = date(2026, 9, 1)
 
@@ -61,7 +61,7 @@ def test_prepare_consume_allocations_uses_fefo_plan(monkeypatch):
         session,
         product_id=10,
         location_id=20,
-        mv_type=MV_TYPES.CONSUME,
+        mv_type=MovementType.CONSUME,
         quantity=Decimal("4"),
         operation_date=OPERATION_DATE,
     )
@@ -90,7 +90,7 @@ def test_prepare_receipt_allocates_to_selected_batch(monkeypatch):
         session,
         product_id=10,
         location_id=20,
-        mv_type=MV_TYPES.RECEIPT,
+        mv_type=MovementType.RECEIPT,
         quantity=Decimal("5"),
         operation_date=OPERATION_DATE,
         batch_number="LOT-1",
@@ -120,7 +120,7 @@ def test_prepare_writeoff_checks_selected_batch_stock(monkeypatch):
         session,
         product_id=10,
         location_id=20,
-        mv_type=MV_TYPES.WRITEOFF,
+        mv_type=MovementType.WRITEOFF,
         quantity=Decimal("3"),
         operation_date=OPERATION_DATE,
         batch_number="LOT-1",
@@ -150,7 +150,7 @@ def test_prepare_negative_correction_checks_absolute_quantity(monkeypatch):
         session,
         product_id=10,
         location_id=20,
-        mv_type=MV_TYPES.CORRECTION,
+        mv_type=MovementType.CORRECTION,
         quantity=Decimal("-3"),
         operation_date=OPERATION_DATE,
         batch_number="LOT-1",
@@ -180,7 +180,7 @@ def test_prepare_positive_correction_does_not_check_stock(monkeypatch):
         session,
         product_id=10,
         location_id=20,
-        mv_type=MV_TYPES.CORRECTION,
+        mv_type=MovementType.CORRECTION,
         quantity=Decimal("3"),
         operation_date=OPERATION_DATE,
         batch_number="LOT-1",
@@ -198,7 +198,7 @@ def test_prepare_allocations_requires_batch_number():
             session,
             product_id=10,
             location_id=20,
-            mv_type=MV_TYPES.RECEIPT,
+            mv_type=MovementType.RECEIPT,
             quantity=Decimal("5"),
             operation_date=OPERATION_DATE,
             batch_number=None,
