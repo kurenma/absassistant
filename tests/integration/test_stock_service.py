@@ -22,6 +22,9 @@ def create_product_and_location(
         sku=f"{sku_prefix}-{suffix}",
         name=f"Stock test product {suffix}",
         unit="kg",
+        lead_time_days=7,
+        package_size=Decimal("1"),
+        min_order_quantity=Decimal("1"),
     )
     location = Location(
         code=f"{location_prefix}-{suffix}",

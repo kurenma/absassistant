@@ -15,6 +15,9 @@ def create_inventory(session: Session) -> tuple[Product, Location, Batch]:
         sku=f"LIST-SKU-{suffix}",
         name=f"List test product {suffix}",
         unit="kg",
+        lead_time_days=7,
+        package_size=Decimal("1"),
+        min_order_quantity=Decimal("1"),
     )
     location = Location(
         code=f"LIST-{suffix}",

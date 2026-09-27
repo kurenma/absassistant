@@ -7,6 +7,7 @@ from sqlalchemy import (
     DateTime,
     Enum,
     ForeignKey,
+    Index,
     Numeric,
     String,
     UniqueConstraint,
@@ -26,8 +27,29 @@ class Product(Base):
     sku: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
     name: Mapped[str] = mapped_column(String(128), nullable=False)
     unit: Mapped[str] = mapped_column(String(8))
+    lead_time_days: Mapped[int] = mapped_column(nullable=False)
+    package_size: Mapped[Decimal] = mapped_column(Numeric(14, 3), nullable=False)
+    min_order_quantity: Mapped[Decimal] = mapped_column(Numeric(14, 3), nullable=False)
 
     batches: Mapped[list["Batch"]] = relationship(back_populates="product")
+    purchase_orders: Mapped[list["PurchaseOrder"]] = relationship(
+        back_populates="product"
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "lead_time_days >= 0",
+            name="ck_products_lead_time_days_nonnegative",
+        ),
+        CheckConstraint(
+            "package_size > 0",
+            name="ck_products_package_size_positive",
+        ),
+        CheckConstraint(
+            "min_order_quantity > 0",
+            name="ck_products_min_order_quantity_positive",
+        ),
+    )
 
 
 class Location(Base):
@@ -38,6 +60,9 @@ class Location(Base):
     name: Mapped[str] = mapped_column(String(64))
 
     batches: Mapped[list["Batch"]] = relationship(back_populates="location")
+    purchase_orders: Mapped[list["PurchaseOrder"]] = relationship(
+        back_populates="location"
+    )
 
 
 class Batch(Base):
@@ -77,6 +102,12 @@ class MV_TYPES(enum.Enum):
     WRITEOFF = "writeoff"
     RETURN = "return"
     CORRECTION = "correction"
+
+
+class SUPPLY_STATUS(enum.Enum):
+    IN_TRANSIT = "in_transit"
+    RECEIVED = "received"
+    CANCELLED = "cancelled"
 
 
 class Movement(Base):
@@ -120,5 +151,46 @@ class MovementAllocation(Base):
         CheckConstraint("quantity > 0", name="ck_movements_allocations_positiveonly"),
         UniqueConstraint(
             "batch_id", "movement_id", name="uq_movements_allocations_movement_batch"
+        ),
+    )
+
+
+class PurchaseOrder(Base):
+    __tablename__ = "purchase_orders"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), nullable=False)
+    location_id: Mapped[int] = mapped_column(ForeignKey("locations.id"), nullable=False)
+    document_number: Mapped[str] = mapped_column(String(128), nullable=False)
+    quantity: Mapped[Decimal] = mapped_column(Numeric(14, 3), nullable=False)
+    unit_price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    expected_at: Mapped[datetime.date] = mapped_column(nullable=False)
+    status: Mapped[SUPPLY_STATUS] = mapped_column(Enum(SUPPLY_STATUS), nullable=False)
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    product: Mapped["Product"] = relationship(back_populates="purchase_orders")
+    location: Mapped["Location"] = relationship(back_populates="purchase_orders")
+
+    __table_args__ = (
+        CheckConstraint(
+            "quantity > 0",
+            name="ck_purchase_orders_quantity_positive",
+        ),
+        CheckConstraint(
+            "unit_price >= 0",
+            name="ck_purchase_orders_unit_price_nonnegative",
+        ),
+        UniqueConstraint(
+            "document_number",
+            name="uq_purchase_orders_document_number",
+        ),
+        Index(
+            "ix_purchase_orders_forecast_lookup",
+            "product_id",
+            "location_id",
+            "status",
+            "expected_at",
         ),
     )

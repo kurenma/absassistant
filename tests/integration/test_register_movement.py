@@ -35,6 +35,9 @@ def create_inventory(
         sku=f"TEST-SKU-{suffix}",
         name=f"Test product {suffix}",
         unit="kg",
+        lead_time_days=7,
+        package_size=Decimal("1"),
+        min_order_quantity=Decimal("1"),
     )
     location = Location(
         code=f"TEST-{suffix}",
