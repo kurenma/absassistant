@@ -35,6 +35,21 @@ class ForecastMetrics:
     stockout_date: datetime.date | None
 
 
+def resolve_horizon_days(
+    horizon_days: int | None,
+    horizon_months: int | None,
+) -> int:
+    if (horizon_days is None) == (horizon_months is None):
+        raise ValueError("Exactly one forecast horizon must be provided")
+    if horizon_days is not None:
+        if horizon_days <= 0:
+            raise ValueError("horizon_days must be positive")
+        return horizon_days
+    if horizon_months is None or horizon_months <= 0:
+        raise ValueError("horizon_months must be positive")
+    return horizon_months * 30
+
+
 def _require_nonnegative(name: str, value: Decimal | int) -> None:
     if value < 0:
         raise ValueError(f"{name} must be nonnegative, got {value}")

@@ -13,6 +13,7 @@ from calculation.forecast import (
     calculate_reorder_point,
     calculate_safety_stock,
     calculate_stockout_date,
+    resolve_horizon_days,
     round_purchase_quantity,
 )
 
@@ -58,6 +59,31 @@ def test_calculate_recommended_purchase_quantity_applies_stock_and_incoming():
     )
 
     assert result == Decimal("80")
+
+
+@pytest.mark.parametrize(
+    ("days", "months", "expected"),
+    [
+        (14, None, 14),
+        (None, 3, 90),
+    ],
+)
+def test_resolve_horizon_days(days, months, expected):
+    assert resolve_horizon_days(days, months) == expected
+
+
+@pytest.mark.parametrize(
+    ("days", "months"),
+    [
+        (None, None),
+        (14, 1),
+        (0, None),
+        (None, 0),
+    ],
+)
+def test_resolve_horizon_days_rejects_invalid_choice(days, months):
+    with pytest.raises(ValueError):
+        resolve_horizon_days(days, months)
 
 
 def test_calculate_estimated_cost_rounds_to_cents():

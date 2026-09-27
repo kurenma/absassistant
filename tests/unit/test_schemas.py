@@ -5,7 +5,7 @@ import pytest
 from pydantic import ValidationError
 
 from product import MV_TYPES
-from schemas import MovementCreate
+from schemas import ForecastRequest, MovementCreate
 
 
 def _today_minus(days: int = 1) -> date:
@@ -112,3 +112,48 @@ def test_quantity_rejects_excess_decimal_places():
 
     with pytest.raises(ValidationError):
         MovementCreate(**make_payload(quantity=Decimal("1.1234")))
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {
+            "sku": "SKU-1",
+            "location": "MAIN",
+            "horizon_days": 14,
+            "safety_stock_days": 7,
+        },
+        {
+            "sku": "SKU-1",
+            "location": "MAIN",
+            "horizon_months": 3,
+            "safety_stock_days": 7,
+        },
+    ],
+)
+def test_forecast_request_accepts_one_horizon(payload):
+    request = ForecastRequest(**payload)
+
+    assert request.sku == "SKU-1"
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {},
+        {"horizon_days": 14, "horizon_months": 1},
+        {"horizon_days": 0},
+        {"horizon_months": 0},
+        {"horizon_days": 14, "safety_stock_days": -1},
+    ],
+)
+def test_forecast_request_rejects_invalid_horizon(overrides):
+    payload = {
+        "sku": "SKU-1",
+        "location": "MAIN",
+        "safety_stock_days": 7,
+        **overrides,
+    }
+
+    with pytest.raises(ValidationError):
+        ForecastRequest(**payload)
