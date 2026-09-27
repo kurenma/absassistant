@@ -1,31 +1,39 @@
+import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from calculation.fefo import InsufficientStockError
 from database import get_session
-from schemas import MovementCreate, MovementCreateResponse, MovementListItem
+from product import MV_TYPES
+from schemas import (
+    MovementCreate,
+    MovementCreateResponse,
+    MovementListItem,
+    MovementListResponse,
+)
 from services.movements import (
     BatchNotFoundError,
     DocumentAlreadyExistsError,
     InsufficientBatchStockError,
     LocationNotFoundError,
     ProductNotFoundError,
-    register_movement,
     list_movements,
+    register_movement,
 )
-from product import MV_TYPES
-import datetime
 
-router = APIRouter(prefix="/movements", tags=["movements"])
+movements_router = APIRouter(prefix="/movements", tags=["movements"])
 
 
-@router.get("", response_model=list[MovementListItem])
+@movements_router.get("", response_model=MovementListResponse)
 def get_movements(
     sku: str | None = Query(default=None, min_length=1, max_length=64),
     location: str | None = Query(default=None, min_length=1, max_length=32),
     movement_type: MV_TYPES | None = Query(default=None, alias="type"),
     date_from: datetime.date | None = Query(default=None),
     date_to: datetime.date | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
     session: Session = Depends(get_session),
 ):
     if date_from is not None and date_to is not None and date_from > date_to:
@@ -38,16 +46,18 @@ def get_movements(
             },
         )
 
-    rows = list_movements(
+    rows, total = list_movements(
         session=session,
         sku=sku,
         location_code=location,
         mv_type=movement_type,
         date_from=date_from,
         date_to=date_to,
+        limit=limit,
+        offset=offset,
     )
 
-    return [
+    items = [
         MovementListItem(
             id=movement.id,
             sku=product_sku,
@@ -61,8 +71,10 @@ def get_movements(
         for movement, product_sku, location_code in rows
     ]
 
+    return MovementListResponse(items=items, total=total, limit=limit, offset=offset)
 
-@router.post(
+
+@movements_router.post(
     "",
     status_code=201,
     response_model=MovementCreateResponse,

@@ -94,12 +94,13 @@ def test_list_movements_orders_by_date_and_id_descending(db_session):
         date(2026, 9, 2),
     )
 
-    rows = list_movements(
+    rows, total = list_movements(
         db_session,
         sku=product.sku,
         location_code=location.code,
     )
 
+    assert total == 3
     assert [movement.id for movement, _, _ in rows] == [
         third.id,
         second.id,
@@ -154,7 +155,7 @@ def test_list_movements_combines_all_filters(db_session):
         date(2026, 9, 10),
     )
 
-    rows = list_movements(
+    rows, total = list_movements(
         db_session,
         sku=product.sku,
         location_code=location.code,
@@ -163,6 +164,7 @@ def test_list_movements_combines_all_filters(db_session):
         date_to=date(2026, 9, 15),
     )
 
+    assert total == 1
     assert len(rows) == 1
     movement, sku, location_code = rows[0]
     assert movement.id == expected.id
@@ -171,7 +173,38 @@ def test_list_movements_combines_all_filters(db_session):
 
 
 @pytest.mark.integration
+def test_list_movements_paginates_without_changing_total(db_session):
+    product, location, batch = create_inventory(db_session)
+    movements = [
+        add_movement(
+            db_session,
+            product,
+            location,
+            batch,
+            f"PAGE-{index}",
+            MV_TYPES.RECEIPT,
+            Decimal("1"),
+            date(2026, 9, index),
+        )
+        for index in range(1, 4)
+    ]
+
+    rows, total = list_movements(
+        db_session,
+        sku=product.sku,
+        location_code=location.code,
+        limit=1,
+        offset=1,
+    )
+
+    assert total == 3
+    assert len(rows) == 1
+    assert rows[0][0].id == movements[1].id
+
+
+@pytest.mark.integration
 def test_list_movements_returns_empty_list_for_unknown_sku(db_session):
-    rows = list_movements(db_session, sku=f"UNKNOWN-{uuid4().hex}")
+    rows, total = list_movements(db_session, sku=f"UNKNOWN-{uuid4().hex}")
 
     assert rows == []
+    assert total == 0
