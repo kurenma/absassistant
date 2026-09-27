@@ -177,3 +177,15 @@ class ForecastResponse(BaseModel):
     stockout_date: datetime.date | None
     explanation: ForecastExplanation
     warnings: list[ForecastWarning]
+
+
+AlertIndicatorValue = str | int | Decimal | datetime.date | None
+
+
+class AlertItem(BaseModel):
+    type: Literal["shortage_risk", "expiry", "no_movement"]
+    level: Literal["warning", "critical"]
+    sku: str
+    location: str
+    message: str
+    indicators: dict[str, AlertIndicatorValue]
